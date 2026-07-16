@@ -11,11 +11,22 @@ from widgets import (
 
 TABLE_COLOR = "#075E2A"
 PANEL_COLOR = "#064D25"
+SECTION_COLOR = "#0A6B34"
 
 RANKS = [
-    "A", "K", "Q", "J", "T",
-    "9", "8", "7", "6",
-    "5", "4", "3", "2",
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
 ]
 
 SUITS = [
@@ -31,22 +42,10 @@ class PokerUI:
     def __init__(self, root):
         self.root = root
 
-        self.root.title(
-            "Poker Equity Calculator"
-        )
-
-        self.root.geometry(
-            "1180x950"
-        )
-
-        self.root.minsize(
-            1050,
-            850,
-        )
-
-        self.root.configure(
-            bg=TABLE_COLOR
-        )
+        self.root.title("Poker Equity Calculator")
+        self.root.geometry("1500x850")
+        self.root.minsize(1400, 780)
+        self.root.configure(bg=TABLE_COLOR)
 
         self.board_cards = []
         self.hero_cards = []
@@ -62,101 +61,164 @@ class PokerUI:
         # Enterで計算
         self.root.bind(
             "<Return>",
-            lambda event:
-                self.calculate_equity(),
+            lambda event: self.calculate_equity(),
         )
 
         # Escで全消去
         self.root.bind(
             "<Escape>",
-            lambda event:
-                self.clear_cards(),
+            lambda event: self.clear_cards(),
         )
 
     def build_ui(self):
-        title = tk.Label(
+        main_container = tk.Frame(
             self.root,
-            text=(
-                "Texas Hold'em "
-                "Equity Calculator"
-            ),
-            font=(
-                "Arial",
-                24,
-                "bold",
-            ),
-            fg="white",
             bg=TABLE_COLOR,
         )
 
-        title.pack(
-            pady=(18, 5),
+        main_container.pack(
+            expand=True,
+            fill="both",
+            padx=18,
+            pady=14,
         )
 
-        instruction = tk.Label(
-            self.root,
+        # 左側：ゲーム画面
+        self.left_panel = tk.Frame(
+            main_container,
+            bg=TABLE_COLOR,
+        )
+
+        self.left_panel.pack(
+            side="left",
+            expand=True,
+            fill="both",
+            padx=(0, 14),
+        )
+
+        # 右側：カードパレット
+        self.right_panel = tk.Frame(
+            main_container,
+            bg=PANEL_COLOR,
+            relief="ridge",
+            borderwidth=3,
+            width=690,
+        )
+
+        self.right_panel.pack(
+            side="right",
+            fill="y",
+        )
+
+        self.right_panel.pack_propagate(False)
+
+        self.build_left_panel()
+        self.build_palette_section()
+
+        # 最初はHeroの1枚目を選択
+        self.set_active_widget(
+            self.hero_cards[0]
+        )
+
+    def build_left_panel(self):
+        tk.Label(
+            self.left_panel,
+            text="Texas Hold'em Equity Calculator",
+            font=("Arial", 24, "bold"),
+            fg="white",
+            bg=TABLE_COLOR,
+        ).pack(
+            pady=(12, 5),
+        )
+
+        tk.Label(
+            self.left_panel,
             text=(
-                "カード枠を選択してから"
-                "下のパレットをクリック\n"
-                "右クリックまたは"
-                "ダブルクリックで1枚解除"
+                "Click a card slot, then choose a card.\n"
+                "Right-click or double-click to clear."
             ),
-            font=(
-                "Arial",
-                11,
-            ),
+            font=("Arial", 11),
             fg="white",
             bg=TABLE_COLOR,
             justify="center",
-        )
-
-        instruction.pack(
-            pady=(0, 12),
+        ).pack(
+            pady=(0, 14),
         )
 
         self.build_board_section()
         self.build_player_section()
         self.build_button_section()
         self.build_result_section()
-        self.build_palette_section()
-
-        self.set_active_widget(
-            self.hero_cards[0]
-        )
 
     def build_board_section(self):
+        board_container = tk.Frame(
+            self.left_panel,
+            bg=SECTION_COLOR,
+            relief="ridge",
+            borderwidth=3,
+        )
+
+        board_container.pack(
+            padx=20,
+            pady=(4, 16),
+        )
+
         tk.Label(
-            self.root,
+            board_container,
             text="Board",
-            font=(
-                "Arial",
-                17,
-                "bold",
-            ),
+            font=("Arial", 18, "bold"),
             fg="white",
-            bg=TABLE_COLOR,
-        ).pack()
-
-        board_frame = tk.Frame(
-            self.root,
-            bg=TABLE_COLOR,
+            bg=SECTION_COLOR,
+        ).pack(
+            pady=(8, 4),
         )
 
-        board_frame.pack(
-            pady=(8, 16),
+        streets_frame = tk.Frame(
+            board_container,
+            bg=SECTION_COLOR,
         )
 
-        for _ in range(5):
+        streets_frame.pack(
+            padx=14,
+            pady=(0, 12),
+        )
+
+        # Flop
+        flop_section = tk.Frame(
+            streets_frame,
+            bg=SECTION_COLOR,
+        )
+
+        flop_section.grid(
+            row=0,
+            column=0,
+            padx=(0, 14),
+        )
+
+        tk.Label(
+            flop_section,
+            text="Flop",
+            font=("Arial", 13, "bold"),
+            fg="white",
+            bg=SECTION_COLOR,
+        ).pack(
+            pady=(0, 5),
+        )
+
+        flop_cards_frame = tk.Frame(
+            flop_section,
+            bg=SECTION_COLOR,
+        )
+
+        flop_cards_frame.pack()
+
+        for _ in range(3):
             widget = CardWidget(
-                board_frame,
+                flop_cards_frame,
                 width=72,
                 height=104,
-                click_callback=(
-                    self.set_active_widget
-                ),
-                clear_callback=(
-                    self.clear_single_card
-                ),
+                click_callback=self.set_active_widget,
+                clear_callback=self.clear_single_card,
             )
 
             widget.pack(
@@ -164,18 +226,114 @@ class PokerUI:
                 padx=5,
             )
 
-            self.board_cards.append(
-                widget
-            )
+            self.board_cards.append(widget)
+
+        # Flop / Turn separator
+        tk.Frame(
+            streets_frame,
+            width=2,
+            height=130,
+            bg="#D9D9D9",
+        ).grid(
+            row=0,
+            column=1,
+            padx=5,
+            sticky="ns",
+        )
+
+        # Turn
+        turn_section = tk.Frame(
+            streets_frame,
+            bg=SECTION_COLOR,
+        )
+
+        turn_section.grid(
+            row=0,
+            column=2,
+            padx=14,
+        )
+
+        tk.Label(
+            turn_section,
+            text="Turn",
+            font=("Arial", 13, "bold"),
+            fg="white",
+            bg=SECTION_COLOR,
+        ).pack(
+            pady=(0, 5),
+        )
+
+        turn_widget = CardWidget(
+            turn_section,
+            width=72,
+            height=104,
+            click_callback=self.set_active_widget,
+            clear_callback=self.clear_single_card,
+        )
+
+        turn_widget.pack(
+            padx=5,
+        )
+
+        self.board_cards.append(turn_widget)
+
+        # Turn / River separator
+        tk.Frame(
+            streets_frame,
+            width=2,
+            height=130,
+            bg="#D9D9D9",
+        ).grid(
+            row=0,
+            column=3,
+            padx=5,
+            sticky="ns",
+        )
+
+        # River
+        river_section = tk.Frame(
+            streets_frame,
+            bg=SECTION_COLOR,
+        )
+
+        river_section.grid(
+            row=0,
+            column=4,
+            padx=(14, 0),
+        )
+
+        tk.Label(
+            river_section,
+            text="River",
+            font=("Arial", 13, "bold"),
+            fg="white",
+            bg=SECTION_COLOR,
+        ).pack(
+            pady=(0, 5),
+        )
+
+        river_widget = CardWidget(
+            river_section,
+            width=72,
+            height=104,
+            click_callback=self.set_active_widget,
+            clear_callback=self.clear_single_card,
+        )
+
+        river_widget.pack(
+            padx=5,
+        )
+
+        self.board_cards.append(river_widget)
 
     def build_player_section(self):
         players_frame = tk.Frame(
-            self.root,
+            self.left_panel,
             bg=TABLE_COLOR,
         )
 
         players_frame.pack(
-            pady=5,
+            pady=8,
         )
 
         # Hero
@@ -187,17 +345,13 @@ class PokerUI:
         hero_section.grid(
             row=0,
             column=0,
-            padx=70,
+            padx=42,
         )
 
         tk.Label(
             hero_section,
             text="Hero",
-            font=(
-                "Arial",
-                17,
-                "bold",
-            ),
+            font=("Arial", 17, "bold"),
             fg="white",
             bg=TABLE_COLOR,
         ).pack()
@@ -216,12 +370,8 @@ class PokerUI:
                 hero_cards_frame,
                 width=82,
                 height=118,
-                click_callback=(
-                    self.set_active_widget
-                ),
-                clear_callback=(
-                    self.clear_single_card
-                ),
+                click_callback=self.set_active_widget,
+                clear_callback=self.clear_single_card,
             )
 
             widget.pack(
@@ -229,9 +379,7 @@ class PokerUI:
                 padx=7,
             )
 
-            self.hero_cards.append(
-                widget
-            )
+            self.hero_cards.append(widget)
 
         # Opponent
         opponent_section = tk.Frame(
@@ -242,17 +390,13 @@ class PokerUI:
         opponent_section.grid(
             row=0,
             column=1,
-            padx=70,
+            padx=42,
         )
 
         tk.Label(
             opponent_section,
             text="Opponent",
-            font=(
-                "Arial",
-                17,
-                "bold",
-            ),
+            font=("Arial", 17, "bold"),
             fg="white",
             bg=TABLE_COLOR,
         ).pack()
@@ -271,12 +415,8 @@ class PokerUI:
                 opponent_cards_frame,
                 width=82,
                 height=118,
-                click_callback=(
-                    self.set_active_widget
-                ),
-                clear_callback=(
-                    self.clear_single_card
-                ),
+                click_callback=self.set_active_widget,
+                clear_callback=self.clear_single_card,
             )
 
             widget.pack(
@@ -284,13 +424,11 @@ class PokerUI:
                 padx=7,
             )
 
-            self.opponent_cards.append(
-                widget
-            )
+            self.opponent_cards.append(widget)
 
     def build_button_section(self):
         button_frame = tk.Frame(
-            self.root,
+            self.left_panel,
             bg=TABLE_COLOR,
         )
 
@@ -318,7 +456,7 @@ class PokerUI:
 
     def build_result_section(self):
         result_frame = tk.Frame(
-            self.root,
+            self.left_panel,
             bg=TABLE_COLOR,
         )
 
@@ -332,11 +470,7 @@ class PokerUI:
                 "Hero Equity: --    "
                 "Opponent Equity: --"
             ),
-            font=(
-                "Arial",
-                17,
-                "bold",
-            ),
+            font=("Arial", 16, "bold"),
             fg="yellow",
             bg=TABLE_COLOR,
         )
@@ -347,7 +481,7 @@ class PokerUI:
 
         self.equity_bar = tk.Canvas(
             result_frame,
-            width=700,
+            width=620,
             height=34,
             bg="#222222",
             highlightthickness=0,
@@ -361,92 +495,61 @@ class PokerUI:
         )
 
     def build_palette_section(self):
-        palette_container = tk.Frame(
-            self.root,
-            bg=PANEL_COLOR,
-            relief="ridge",
-            borderwidth=3,
-        )
-
-        palette_container.pack(
-            padx=20,
-            pady=(5, 18),
-            fill="x",
-        )
-
         tk.Label(
-            palette_container,
+            self.right_panel,
             text="Card Palette",
-            font=(
-                "Arial",
-                14,
-                "bold",
-            ),
+            font=("Arial", 18, "bold"),
             fg="white",
             bg=PANEL_COLOR,
         ).pack(
-            pady=(7, 4),
+            pady=(10, 6),
+        )
+
+        tk.Label(
+            self.right_panel,
+            text="Select a card for the highlighted slot",
+            font=("Arial", 10),
+            fg="white",
+            bg=PANEL_COLOR,
+        ).pack(
+            pady=(0, 10),
         )
 
         palette_frame = tk.Frame(
-            palette_container,
+            self.right_panel,
             bg=PANEL_COLOR,
         )
 
         palette_frame.pack(
-            pady=(0, 8),
+            pady=4,
         )
 
-        for row, (
-            suit_code,
-            suit_symbol,
-        ) in enumerate(SUITS):
+        # 13行 × 4列
+        # A♠ A♥ A♦ A♣
+        # K♠ K♥ K♦ K♣
+        # ...
+        for row, rank in enumerate(RANKS):
+            for column, (
+                suit_code,
+                suit_symbol,
+            ) in enumerate(SUITS):
 
-            suit_color = (
-                "#FF4D4D"
-                if suit_code in {"h", "d"}
-                else "white"
-            )
-
-            tk.Label(
-                palette_frame,
-                text=suit_symbol,
-                font=(
-                    "Arial",
-                    20,
-                    "bold",
-                ),
-                fg=suit_color,
-                bg=PANEL_COLOR,
-                width=2,
-            ).grid(
-                row=row,
-                column=0,
-                padx=(4, 8),
-            )
-
-            for column, rank in enumerate(
-                RANKS,
-                start=1,
-            ):
                 card = rank + suit_code
 
                 try:
                     image = CardImage.load(
                         card,
-                        42,
-                        59,
+                        32,
+                        45,
                     )
 
-                    self.palette_images[
-                        card
-                    ] = image
+                    self.palette_images[card] = image
 
                     button = tk.Button(
                         palette_frame,
                         image=image,
-                        width=45,
-                        height=62,
+                        width=36,
+                        height=49,
                         relief="raised",
                         borderwidth=2,
                         cursor="hand2",
@@ -459,19 +562,19 @@ class PokerUI:
                     )
 
                 except FileNotFoundError:
+                    text_color = (
+                        "#FF4D4D"
+                        if suit_code in {"h", "d"}
+                        else "black"
+                    )
+
                     button = tk.Button(
                         palette_frame,
-                        text=(
-                            f"{rank}"
-                            f"{suit_symbol}"
-                        ),
+                        text=f"{rank}{suit_symbol}",
                         width=4,
                         height=2,
-                        font=(
-                            "Arial",
-                            10,
-                            "bold",
-                        ),
+                        font=("Arial", 9, "bold"),
+                        fg=text_color,
                         cursor="hand2",
                         command=(
                             lambda selected=card:
@@ -485,21 +588,12 @@ class PokerUI:
                     row=row,
                     column=column,
                     padx=2,
-                    pady=2,
+                    pady=1,
                 )
 
-                self.palette_buttons[
-                    card
-                ] = button
+                self.palette_buttons[card] = button
 
     def get_all_widgets(self):
-        """
-        自動移動順。
-
-        Hero
-        → Opponent
-        → Board
-        """
         return (
             self.hero_cards
             + self.opponent_cards
@@ -507,48 +601,29 @@ class PokerUI:
         )
 
     def get_selected_cards(self):
-        """選択済みカードを返す。"""
         return [
             widget.card
-            for widget
-            in self.get_all_widgets()
+            for widget in self.get_all_widgets()
             if widget.card is not None
         ]
 
-    def set_active_widget(
-        self,
-        widget,
-    ):
-        """入力対象の枠を変更する。"""
+    def set_active_widget(self, widget):
         if self.active_widget is not None:
-            self.active_widget.set_active(
-                False
-            )
+            self.active_widget.set_active(False)
 
         self.active_widget = widget
-
-        self.active_widget.set_active(
-            True
-        )
+        self.active_widget.set_active(True)
 
         self.update_palette_buttons()
 
-    def select_palette_card(
-        self,
-        card,
-    ):
-        """カードを現在の枠へ設定する。"""
+    def select_palette_card(self, card):
         if self.active_widget is None:
             return
 
-        used_cards = (
-            self.get_selected_cards()
-        )
+        used_cards = self.get_selected_cards()
 
-        if (
-            self.active_widget.card
-            in used_cards
-        ):
+        # 現在の枠に入っているカードは変更可能
+        if self.active_widget.card in used_cards:
             used_cards.remove(
                 self.active_widget.card
             )
@@ -556,81 +631,57 @@ class PokerUI:
         if card in used_cards:
             return
 
-        self.active_widget.set_card(
-            card
-        )
+        self.active_widget.set_card(card)
 
         self.reset_results()
-
         self.update_palette_buttons()
         self.move_to_next_empty_widget()
 
     def move_to_next_empty_widget(self):
-        """次の空き枠へ自動移動する。"""
-        all_widgets = (
-            self.get_all_widgets()
-        )
+        all_widgets = self.get_all_widgets()
 
-        if (
-            self.active_widget
-            not in all_widgets
-        ):
+        if self.active_widget not in all_widgets:
             return
 
-        current_index = (
-            all_widgets.index(
-                self.active_widget
-            )
+        current_index = all_widgets.index(
+            self.active_widget
         )
 
+        # 現在より後ろの空き枠を探す
         for index in range(
             current_index + 1,
             len(all_widgets),
         ):
-            if (
-                all_widgets[index].card
-                is None
-            ):
+            if all_widgets[index].card is None:
                 self.set_active_widget(
                     all_widgets[index]
                 )
                 return
 
+        # 後ろになければ前方を探す
         for index in range(
             0,
             current_index,
         ):
-            if (
-                all_widgets[index].card
-                is None
-            ):
+            if all_widgets[index].card is None:
                 self.set_active_widget(
                     all_widgets[index]
                 )
                 return
 
-        self.active_widget.set_active(
-            False
-        )
-
+        # 全部埋まった場合
+        self.active_widget.set_active(False)
         self.active_widget = None
 
-    def clear_single_card(
-        self,
-        widget,
-    ):
-        """指定されたカード1枚だけを解除する。"""
+    def clear_single_card(self, widget):
         widget.clear()
 
-        self.set_active_widget(
-            widget
-        )
+        self.set_active_widget(widget)
 
         self.reset_results()
         self.update_palette_buttons()
 
     def update_palette_buttons(self):
-        """使用済みカードを無効化する。"""
         used_cards = set(
             self.get_selected_cards()
         )
@@ -641,9 +692,7 @@ class PokerUI:
             else None
         )
 
-        for card, button in (
-            self.palette_buttons.items()
-        ):
+        for card, button in self.palette_buttons.items():
             if (
                 card in used_cards
                 and card != current_card
@@ -659,27 +708,32 @@ class PokerUI:
                     relief="raised",
                 )
 
-    def get_card_text(
-        self,
-        widgets,
-    ):
-        """AsKs形式へ変換する。"""
+    def get_card_text(self, widgets):
         return "".join(
             widget.card or ""
             for widget in widgets
         )
+
+    def validate_board_order(self):
+        seen_empty = False
+
+        for widget in self.board_cards:
+            if widget.card is None:
+                seen_empty = True
+
+            elif seen_empty:
+                raise ValueError(
+                    "Board cards must be selected from left to right."
+                )
 
     def draw_equity_bar(
         self,
         hero_equity,
         opponent_equity,
     ):
-        """エクイティバーを描画する。"""
-        self.equity_bar.delete(
-            "all"
-        )
+        self.equity_bar.delete("all")
 
-        width = 700
+        width = 620
         height = 34
 
         if (
@@ -700,18 +754,12 @@ class PokerUI:
                 height / 2,
                 text="No calculation yet",
                 fill="white",
-                font=(
-                    "Arial",
-                    11,
-                    "bold",
-                ),
+                font=("Arial", 11, "bold"),
             )
 
             return
 
-        hero_width = (
-            width * hero_equity
-        )
+        hero_width = width * hero_equity
 
         self.equity_bar.create_rectangle(
             0,
@@ -731,55 +779,36 @@ class PokerUI:
             outline="",
         )
 
-        if hero_width > 100:
+        if hero_width > 90:
             self.equity_bar.create_text(
                 hero_width / 2,
                 height / 2,
-                text=(
-                    f"Hero "
-                    f"{hero_equity:.1%}"
-                ),
+                text=f"Hero {hero_equity:.1%}",
                 fill="white",
-                font=(
-                    "Arial",
-                    11,
-                    "bold",
-                ),
+                font=("Arial", 11, "bold"),
             )
 
-        opponent_width = (
-            width - hero_width
-        )
+        opponent_width = width - hero_width
 
-        if opponent_width > 100:
+        if opponent_width > 90:
             self.equity_bar.create_text(
-                (
-                    hero_width
-                    + opponent_width / 2
-                ),
+                hero_width + opponent_width / 2,
                 height / 2,
                 text=(
                     f"Opponent "
                     f"{opponent_equity:.1%}"
                 ),
                 fill="white",
-                font=(
-                    "Arial",
-                    11,
-                    "bold",
-                ),
+                font=("Arial", 11, "bold"),
             )
 
     def calculate_equity(self):
-        """現在のカードで計算する。"""
         hero_text = self.get_card_text(
             self.hero_cards
         )
 
-        opponent_text = (
-            self.get_card_text(
-                self.opponent_cards
-            )
+        opponent_text = self.get_card_text(
+            self.opponent_cards
         )
 
         board_text = self.get_card_text(
@@ -794,6 +823,8 @@ class PokerUI:
         self.root.update_idletasks()
 
         try:
+            self.validate_board_order()
+
             hero = ec.parse_cards(
                 hero_text,
                 "Hero",
@@ -821,9 +852,7 @@ class PokerUI:
                 2,
             )
 
-            ec.validate_board(
-                board
-            )
+            ec.validate_board(board)
 
             ec.validate_no_duplicates(
                 hero,
@@ -848,12 +877,9 @@ class PokerUI:
 
             self.result_box.config(
                 text=(
-                    f"Board: "
-                    f"{board_display}    "
-                    f"Hero Equity: "
-                    f"{hero_equity:.2%}    "
-                    f"Opponent Equity: "
-                    f"{opponent_equity:.2%}"
+                    f"Board: {board_display}    "
+                    f"Hero: {hero_equity:.2%}    "
+                    f"Opponent: {opponent_equity:.2%}"
                 ),
                 fg="yellow",
             )
@@ -889,7 +915,6 @@ class PokerUI:
             )
 
     def reset_results(self):
-        """カード変更時に結果をリセットする。"""
         self.result_box.config(
             text=(
                 "Hero Equity: --    "
@@ -904,10 +929,7 @@ class PokerUI:
         )
 
     def clear_cards(self):
-        """全カードを解除する。"""
-        for widget in (
-            self.get_all_widgets()
-        ):
+        for widget in self.get_all_widgets():
             widget.clear()
 
         self.reset_results()
