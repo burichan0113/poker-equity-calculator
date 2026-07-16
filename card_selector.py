@@ -1,5 +1,7 @@
 import tkinter as tk
 
+from widgets import CardImage
+
 
 RANKS = [
     "A", "K", "Q", "J", "T",
@@ -7,12 +9,7 @@ RANKS = [
     "5", "4", "3", "2",
 ]
 
-SUITS = {
-    "s": "♠",
-    "h": "♥",
-    "d": "♦",
-    "c": "♣",
-}
+SUITS = ["s", "h", "d", "c"]
 
 
 class CardSelector(tk.Toplevel):
@@ -28,23 +25,37 @@ class CardSelector(tk.Toplevel):
         self.callback = callback
         self.used_cards = set(used_cards or [])
         self.buttons = {}
+        self.images = {}
 
         self.title("Select Card")
         self.resizable(False, False)
         self.transient(parent)
 
-        # クリック中でも親画面を操作できるように
-        # grab_set() は使わない
+        self.protocol(
+            "WM_DELETE_WINDOW",
+            self.close,
+        )
 
         for row, rank in enumerate(RANKS):
-            for column, (suit, symbol) in enumerate(SUITS.items()):
+            for column, suit in enumerate(SUITS):
                 card = rank + suit
+
+                image = CardImage.load(
+                    card,
+                    48,
+                    68,
+                )
+
+                self.images[card] = image
 
                 button = tk.Button(
                     self,
-                    text=rank + symbol,
-                    width=6,
-                    font=("Arial", 12, "bold"),
+                    image=image,
+                    width=52,
+                    height=68,
+                    relief="raised",
+                    borderwidth=2,
+                    cursor="hand2",
                     command=lambda selected_card=card: self.select(
                         selected_card
                     ),
@@ -53,13 +64,15 @@ class CardSelector(tk.Toplevel):
                 button.grid(
                     row=row,
                     column=column,
-                    padx=4,
-                    pady=4,
+                    padx=3,
+                    pady=3,
                 )
 
                 self.buttons[card] = button
 
-        self.update_used_cards(self.used_cards)
+        self.update_used_cards(
+            self.used_cards
+        )
 
     def select(self, card):
         if card in self.used_cards:
@@ -74,10 +87,13 @@ class CardSelector(tk.Toplevel):
             if card in self.used_cards:
                 button.config(
                     state="disabled",
-                    bg="#dddddd",
+                    relief="sunken",
                 )
             else:
                 button.config(
                     state="normal",
-                    bg="SystemButtonFace",
+                    relief="raised",
                 )
+
+    def close(self):
+        self.destroy()

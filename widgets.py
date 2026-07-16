@@ -1,9 +1,60 @@
 import os
 import tkinter as tk
+
 from PIL import Image, ImageTk
 
+
+class CardImage:
+    """カード画像を読み込み、サイズ別にキャッシュする。"""
+
+    cache = {}
+
+    @staticmethod
+    def load(
+        card: str,
+        width: int,
+        height: int,
+    ):
+        key = f"{card}_{width}_{height}"
+
+        if key in CardImage.cache:
+            return CardImage.cache[key]
+
+        path = os.path.join(
+            os.path.dirname(__file__),
+            "cards",
+            f"{card}.png",
+        )
+
+        if not os.path.exists(path):
+            raise FileNotFoundError(
+                f"カード画像が見つかりません: {path}"
+            )
+
+        image = Image.open(path).convert("RGBA")
+
+        image = image.resize(
+            (width, height),
+            Image.Resampling.LANCZOS,
+        )
+
+        photo = ImageTk.PhotoImage(image)
+
+        CardImage.cache[key] = photo
+
+        return photo
+
+
 class CardWidget(tk.Frame):
-    """固定サイズで、クリックしてカードを選択できるカード枠。"""
+    """
+    Hero・Opponent・Boardで使うカード枠。
+
+    左クリック:
+        選択対象にする
+
+    右クリックまたはダブルクリック:
+        カードを解除する
+    """
 
     SUIT_SYMBOLS = {
         "s": "♠",
@@ -18,6 +69,7 @@ class CardWidget(tk.Frame):
         width=90,
         height=130,
         click_callback=None,
+        clear_callback=None,
     ):
         super().__init__(
             parent,
@@ -27,22 +79,25 @@ class CardWidget(tk.Frame):
             relief="solid",
             borderwidth=2,
             cursor="hand2",
+            highlightthickness=3,
+            highlightbackground="#222222",
+            highlightcolor="#222222",
         )
 
-        # Frameを中身に合わせて縮ませず、指定サイズを維持する
         self.pack_propagate(False)
         self.grid_propagate(False)
 
         self.card_width = width
         self.card_height = height
+
         self.click_callback = click_callback
+        self.clear_callback = clear_callback
 
         self.card = None
         self.image = None
 
         self.label = tk.Label(
             self,
-            text="?",
             bg="white",
             fg="gray",
             font=("Arial", 24, "bold"),
@@ -54,25 +109,71 @@ class CardWidget(tk.Frame):
             fill="both",
         )
 
-        # Frameと中のLabel、どちらを押しても反応させる
-        self.bind("<Button-1>", self._on_click)
-        self.label.bind("<Button-1>", self._on_click)
+        # 左クリック
+        self.bind(
+            "<Button-1>",
+            self._on_click,
+        )
+
+        self.label.bind(
+            "<Button-1>",
+            self._on_click,
+        )
+
+        # 右クリック
+        self.bind(
+            "<Button-3>",
+            self._on_clear,
+        )
+
+        self.label.bind(
+            "<Button-3>",
+            self._on_clear,
+        )
+
+        # ダブルクリック
+        self.bind(
+            "<Double-Button-1>",
+            self._on_clear,
+        )
+
+        self.label.bind(
+            "<Double-Button-1>",
+            self._on_clear,
+        )
+
+        self.show_back()
 
     def _on_click(self, event=None):
+        """このカード枠を選択対象にする。"""
         if self.click_callback:
             self.click_callback(self)
 
-    def set_card(self, card: str):
-        """画像があれば画像、なければA♠のような文字で表示する。"""
-        self.card = card
+    def _on_clear(self, event=None):
+        """このカード枠だけを解除する。"""
+        if self.clear_callback:
+            self.clear_callback(self)
 
-        image_path = os.path.join(
-            os.path.dirname(__file__),
-            "cards",
-            f"{card}.png",
+        return "break"
+
+    def set_active(self, active: bool):
+        """選択中の枠を黄色で表示する。"""
+        color = (
+            "#FFD43B"
+            if active
+            else "#222222"
         )
 
-        if os.path.exists(image_path):
+        self.config(
+            highlightbackground=color,
+            highlightcolor=color,
+        )
+
+    def set_card(self, card: str):
+        """指定されたカードを表示する。"""
+        self.card = card
+
+        try:
             self.image = CardImage.load(
                 card,
                 self.card_width,
@@ -85,12 +186,13 @@ class CardWidget(tk.Frame):
                 bg="white",
             )
 
-        else:
+        except FileNotFoundError:
             rank = card[0]
             suit = card[1]
+
             symbol = self.SUIT_SYMBOLS[suit]
 
-            text_color = (
+            color = (
                 "red"
                 if suit in {"h", "d"}
                 else "black"
@@ -101,24 +203,42 @@ class CardWidget(tk.Frame):
             self.label.config(
                 image="",
                 text=f"{rank}{symbol}",
-                fg=text_color,
+                fg=color,
                 bg="white",
             )
 
     def show_back(self):
-        """カード未選択状態に戻す。"""
+        """カード未選択状態へ戻す。"""
         self.card = None
-        self.image = None
 
-        self.label.config(
-            image="",
-            text="?",
-            fg="gray",
-            bg="white",
-        )
+        try:
+            self.image = CardImage.load(
+                "back",
+                self.card_width,
+                self.card_height,
+            )
+
+            self.label.config(
+                image=self.image,
+                text="",
+                bg="white",
+            )
+
+        except FileNotFoundError:
+            self.image = None
+
+            self.label.config(
+                image="",
+                text="?",
+                fg="gray",
+                bg="white",
+            )
 
     def clear(self):
+        """カードを解除する。"""
         self.show_back()
+        self.set_active(False)
+
 
 class ActionButton(tk.Button):
     """共通デザインの操作ボタン。"""
@@ -135,7 +255,7 @@ class ActionButton(tk.Button):
             command=command,
             width=18,
             height=2,
-            font=("Arial", 14, "bold"),
+            font=("Arial", 13, "bold"),
             bg="#111111",
             fg="white",
             activebackground="#333333",
