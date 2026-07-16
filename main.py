@@ -1,17 +1,11 @@
-print("START")
-
 import tkinter as tk
+
 from ui import PokerUI
 
 
 def main():
-
-    print("OPEN GUI")
-
     root = tk.Tk()
-
-    app = PokerUI(root)
-
+    PokerUI(root)
     root.mainloop()
 
 

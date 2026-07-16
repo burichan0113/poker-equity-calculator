@@ -22,7 +22,10 @@ def validate_no_duplicates(*groups):
 
 
 def cards_to_string(cards):
-    return "".join(str(c) for c in cards)
+    return "".join(
+        card.rank.value + card.suit.value
+        for card in cards
+    )
 
 
 def calculate_equity(hero, opponent, board):
